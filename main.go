@@ -88,7 +88,6 @@ func authHandler(key string, h http.Handler) http.Handler {
 			return
 		}
 		logger(r)
-		r.Header.Get("")
 		h.ServeHTTP(w, r)
 	})
 }
