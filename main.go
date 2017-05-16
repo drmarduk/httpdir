@@ -1,0 +1,84 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"net/http"
+)
+
+func generateKey() string {
+	return "this.is.sparta"
+}
+
+func main() {
+	host := flag.String("host", "localhost", "hostname to listen on")
+	port := flag.Int("port", 8080, "port number to listen on")
+	tls := flag.Bool("tls", true, "should we use tls")
+	root := flag.String("root", ".", "folder which we serve")
+	pass := flag.String("pass", generateKey(), "the key to enter the directory")
+	cert := flag.String("cert", "server.crt", "the filename of the server certificate")
+	key := flag.String("key", "server.key", "the filename of the server key")
+	flag.Parse()
+
+	fileServer := http.FileServer(http.Dir(*root))
+	http.Handle("/", authHandler(*pass, fileServer))
+	http.HandleFunc("/login", loginHandler)
+
+	url := fmt.Sprintf("%s:%d", *host, *port)
+
+	if *tls {
+		log.Fatal(http.ListenAndServeTLS(url, *cert, *key, nil))
+	} else {
+		log.Fatal(http.ListenAndServe(url, nil))
+	}
+}
+
+var cookiename string = "keykkk"
+var cookievalue string = "41ff8bf74af55135ed09c90c1c80bf0d0289500d0bf7f9c76ef7115f7e62bd10"
+
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		key := r.Form.Get("key")
+		if key == generateKey() {
+			c := &http.Cookie{}
+			c.HttpOnly = true
+			c.Name = cookiename
+			c.Secure = true
+			c.Value = cookievalue
+			http.SetCookie(w, c)
+		}
+		http.Redirect(w, r, "/", 301)
+		return
+	}
+	html := `<html><head><title>Login</title><body><form method="post" action="/login">Key<input name="key" type="text"/><input type="submit" /></form></body></html>`
+	fmt.Fprint(w, html)
+}
+
+func check(r *http.Request) bool {
+	for _, c := range r.Cookies() {
+		if c.Name == cookiename {
+			if c.Value == generateKey() {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func authHandler(key string, h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !check(r) {
+			http.Redirect(w, r, "/login", 301)
+			return
+		}
+		logger(r)
+		r.Header.Get("")
+		h.ServeHTTP(w, r)
+	})
+}
+
+func logger(r *http.Request) {
+	fmt.Printf("%s: %s - %s\n", r.Method, r.URL.Path, r.RemoteAddr)
+}
