@@ -21,7 +21,7 @@ func hash(s string) string {
 }
 
 func main() {
-	host := flag.String("host", "localhost", "hostname to listen on")
+	host := flag.String("host", "", "hostname to listen on")
 	port := flag.Int("port", 8080, "port number to listen on")
 	tls := flag.Bool("tls", true, "should we use tls")
 	root := flag.String("root", ".", "folder which we serve")
@@ -31,6 +31,7 @@ func main() {
 	flag.Parse()
 
 	cookievalue = hash(*pass)
+	log.Printf("Pass: %s - %s\n", *pass, cookievalue)
 	fileServer := http.FileServer(http.Dir(*root))
 	http.Handle("/", authHandler(*pass, fileServer))
 	http.HandleFunc("/login", loginHandler)
