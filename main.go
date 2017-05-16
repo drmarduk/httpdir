@@ -58,6 +58,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			c.Name = cookiename
 			c.Secure = true
 			c.Value = cookievalue
+			log.Printf("SetCookie: %s\n", r.RemoteAddr)
 			http.SetCookie(w, c)
 		}
 		http.Redirect(w, r, "/", 301)
