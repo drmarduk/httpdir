@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"log"
@@ -9,6 +11,13 @@ import (
 
 func generateKey() string {
 	return "this.is.sparta"
+}
+
+func hash(s string) string {
+	hasher := sha256.New()
+	hasher.Write([]byte(s))
+	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+	return sha
 }
 
 func main() {
@@ -21,6 +30,7 @@ func main() {
 	key := flag.String("key", "server.key", "the filename of the server key")
 	flag.Parse()
 
+	cookievalue = hash(*pass)
 	fileServer := http.FileServer(http.Dir(*root))
 	http.Handle("/", authHandler(*pass, fileServer))
 	http.HandleFunc("/login", loginHandler)
@@ -35,7 +45,7 @@ func main() {
 }
 
 var cookiename string = "keykkk"
-var cookievalue string = "41ff8bf74af55135ed09c90c1c80bf0d0289500d0bf7f9c76ef7115f7e62bd10"
+var cookievalue string = ""
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
@@ -59,7 +69,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 func check(r *http.Request) bool {
 	for _, c := range r.Cookies() {
 		if c.Name == cookiename {
-			if c.Value == generateKey() {
+			if c.Value == cookievalue {
 				return true
 			}
 		}
