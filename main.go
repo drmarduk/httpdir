@@ -52,7 +52,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		r.ParseForm()
 		key := r.Form.Get("key")
-		if key == generateKey() {
+		_key := hash(key)
+		if _key == cookievalue {
 			c := &http.Cookie{}
 			c.HttpOnly = true
 			c.Name = cookiename
