@@ -70,6 +70,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func check(r *http.Request) bool {
+	log.Printf("check %d cookies\n", len(r.Cookies()))
 	for _, c := range r.Cookies() {
 		if c.Name == cookiename {
 			if c.Value == cookievalue {
