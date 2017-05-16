@@ -55,9 +55,9 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		_key := hash(key)
 		if _key == cookievalue {
 			c := &http.Cookie{}
-			c.HttpOnly = true
+			// c.HttpOnly =
 			c.Name = cookiename
-			c.Secure = true
+			// c.Secure = true
 			c.Value = cookievalue
 			log.Printf("SetCookie: %s\n", r.RemoteAddr)
 			http.SetCookie(w, c)
