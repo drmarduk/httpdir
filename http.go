@@ -21,12 +21,15 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, "/", 301)
 	} else {
-	html := `<html><head><title>Login</title><body><form method="post" action="/login">Key<input name="key" type="text"/><input type="submit" /></form></body></html>`
-	fmt.Fprint(w, html)
+		html := `<html><head><title>Login</title><body><form method="post" action="/login">Key<input name="key" type="text"/><input type="submit" /></form></body></html>`
+		fmt.Fprint(w, html)
 	}
 }
 
 func check(r *http.Request) bool {
+	if noauth {
+		return true // OOOOOOHHHH, watch out
+	}
 	k, err := r.Cookie("key")
 	if err != nil {
 		return false

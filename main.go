@@ -7,7 +7,10 @@ import (
 	"net/http"
 )
 
-var cookievalue string
+var (
+	cookievalue string
+	noauth      bool
+)
 
 func main() {
 	host := flag.String("host", "", "hostname to listen on")
@@ -16,10 +19,12 @@ func main() {
 	pass := flag.String("pass", generateKey(), "the key to enter the directory")
 	cert := flag.String("cert", "server.crt", "the filename of the server certificate")
 	key := flag.String("key", "server.key", "the filename of the server key")
+	auth := flag.Bool("noauth", false, "if true == no auth")
 	flag.Parse()
 
 	// TODO: meeh, we do not want global vars
 	cookievalue = hash(*pass)
+	noauth = *auth
 
 	fileServer := http.FileServer(http.Dir(*root))
 	http.Handle("/", authHandler(*pass, fileServer))
