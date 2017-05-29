@@ -12,6 +12,15 @@ var (
 	noauth      bool
 )
 
+func redirect(w http.ResponseWriter, req *http.Request) {
+    // remove/add not default ports from req.Host
+    target := "https://" + req.Host + req.URL.Path 
+    if len(req.URL.RawQuery) > 0 {
+        target += "?" + req.URL.RawQuery
+    }
+    http.Redirect(w, req, target, http.StatusTemporaryRedirect)
+}
+
 func main() {
 	host := flag.String("host", "", "hostname to listen on")
 	port := flag.Int("port", 8080, "port number to listen on")
@@ -31,6 +40,7 @@ func main() {
 	http.HandleFunc("/login", loginHandler)
 
 	url := fmt.Sprintf("%s:%d", *host, *port)
+	go log.Fatal(http.ListenAndServe(":80", http.HandlerFunc(redirect)))
 	log.Fatal(http.ListenAndServeTLS(url, *cert, *key, nil))
 }
 
