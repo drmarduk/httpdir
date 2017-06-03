@@ -16,6 +16,7 @@ func main() {
 	pass := flag.String("pass", generateKey(), "the key to enter the directory")
 	cert := flag.String("cert", "server.crt", "the filename of the server certificate")
 	key := flag.String("key", "server.key", "the filename of the server key")
+	tls := flag.Bool("tls", true ,"wether to use tls")
 	flag.Parse()
 
 	// TODO: meeh, we do not want global vars
@@ -26,7 +27,12 @@ func main() {
 	http.HandleFunc("/login", loginHandler)
 
 	url := fmt.Sprintf("%s:%d", *host, *port)
-	log.Fatal(http.ListenAndServeTLS(url, *cert, *key, nil))
+
+	if !*tls {
+		log.Fatal(http.ListenAndServe(url, nil))
+	} else {
+		log.Fatal(http.ListenAndServeTLS(url, *cert, *key, nil))
+	}
 }
 
 // TODO: rename filenam on request
