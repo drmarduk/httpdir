@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
 
 var (
@@ -13,31 +14,39 @@ var (
 )
 
 func main() {
+	// Server info
 	host := flag.String("host", "", "hostname to listen on")
 	port := flag.Int("port", 8080, "port number to listen on")
 	root := flag.String("root", ".", "folder which we serve")
-	pass := flag.String("pass", generateKey(), "the key to enter the directory")
+	// TLS
 	cert := flag.String("cert", "server.crt", "the filename of the server certificate")
 	key := flag.String("key", "server.key", "the filename of the server key")
-	tls := flag.Bool("tls", true ,"wether to use tls")
-	auth := flag.Bool("noauth", false, "if true == no auth")
+	tls := flag.Bool("tls", false, "wether to use tls")
+	// Auth
+	useauth := flag.Bool("useauth", false, "weather we want to use pass based auth. default: false")
+	pass := flag.String("pass", "tomatensaft", "the key to enter the directory")
 	flag.Parse()
 
-	// TODO: meeh, we do not want global vars
-	cookievalue = hash(*pass)
-	noauth = *auth
+	logger := log.New(os.Stdout, "", log.LstdFlags)
 
+	// Create AuthManager
+	authmanager := NewAuthManager(*useauth, logger)
+	authmanager.AddPassphrase(*pass)
+
+	mux := http.NewServeMux()
 	fileServer := http.FileServer(http.Dir(*root))
-	http.Handle("/", authHandler(*pass, fileServer))
-	http.HandleFunc("/login", loginHandler)
+	mux.Handle("/files", authmanager.Check(fileServer))
+	// mux.Handle("/stream", authmanager.TokenCheck(fileserver))
+	mux.HandleFunc("/login", authmanager.Login)
 
-	url := fmt.Sprintf("%s:%d", *host, *port)
-
+	url := ""
 	if !*tls {
-		log.Fatal(http.ListenAndServe(url, nil))
+		url = fmt.Sprintf("http://%s:%d", *host, *port)
+		logger.Printf("Listening on %s\n", url)
+		logger.Fatal(http.ListenAndServe(url, mux))
 	} else {
-		log.Fatal(http.ListenAndServeTLS(url, *cert, *key, nil))
+		url = fmt.Sprintf("https://%s:%d", *host, *port)
+		logger.Printf("Listening on %s\n", url)
+		logger.Fatal(http.ListenAndServeTLS(url, *cert, *key, mux))
 	}
 }
-
-// TODO: rename filenam on request
