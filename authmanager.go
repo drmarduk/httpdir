@@ -44,7 +44,7 @@ func (am *AuthManager) AddPassphrase(pass string) {
 		return
 	}
 	am.Passphrase = am.hashstring(pass)
-	am.logger.Printf("Added Passphrase %s\n", am.Passphrase)
+	am.logger.Printf("Added Passphrase %s - %s\n", pass, am.Passphrase)
 }
 
 // Check is the http handler which checks the request if the key cookie is set

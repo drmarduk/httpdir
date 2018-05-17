@@ -9,44 +9,49 @@ import (
 )
 
 var (
-	cookievalue string
-	noauth      bool
+	opts   options
+	logger *log.Logger
 )
 
+type options struct {
+	host    string
+	port    int
+	root    string
+	cert    string
+	key     string
+	tls     bool
+	useauth bool
+	pass    string
+}
+
 func main() {
-	// Server info
-	host := flag.String("host", "", "hostname to listen on")
-	port := flag.Int("port", 8080, "port number to listen on")
-	root := flag.String("root", ".", "folder which we serve")
-	// TLS
-	cert := flag.String("cert", "server.crt", "the filename of the server certificate")
-	key := flag.String("key", "server.key", "the filename of the server key")
-	tls := flag.Bool("tls", false, "wether to use tls")
-	// Auth
-	useauth := flag.Bool("useauth", false, "weather we want to use pass based auth. default: false")
-	pass := flag.String("pass", "tomatensaft", "the key to enter the directory")
+	logger = log.New(os.Stdout, "", log.LstdFlags)
+
+	flag.StringVar(&opts.host, "host", "localhost", "hostname to listen on")
+	flag.IntVar(&opts.port, "port", 8080, "port number to listen on")
+	flag.StringVar(&opts.root, "root", "./", "folder which we serve")
+	flag.StringVar(&opts.cert, "cert", "server.crt", "the filename of the server certificate")
+	flag.StringVar(&opts.key, "key", "server.key", "the filename of the server key")
+	flag.BoolVar(&opts.tls, "tls", false, "wether to use tls")
+	flag.BoolVar(&opts.useauth, "useauth", true, "use user/pass or not. default: false")
+	flag.StringVar(&opts.pass, "pass", "tomatensaft", "the key to enter the directory")
 	flag.Parse()
 
-	logger := log.New(os.Stdout, "", log.LstdFlags)
-
 	// Create AuthManager
-	authmanager := NewAuthManager(*useauth, logger)
-	authmanager.AddPassphrase(*pass)
+	authmanager := NewAuthManager(opts.useauth, logger)
+	authmanager.AddPassphrase(opts.pass)
 
 	mux := http.NewServeMux()
-	fileServer := http.FileServer(http.Dir(*root))
-	mux.Handle("/files", authmanager.Check(fileServer))
-	// mux.Handle("/stream", authmanager.TokenCheck(fileserver))
+	fileServer := NewStreamFileSystem(opts.root, "/files")
+	mux.Handle("/files/", authmanager.Check(fileServer))
+	mux.HandleFunc("/stream/", fileServer.Stream)
 	mux.HandleFunc("/login", authmanager.Login)
 
-	url := ""
-	if !*tls {
-		url = fmt.Sprintf("http://%s:%d", *host, *port)
-		logger.Printf("Listening on %s\n", url)
+	url := fmt.Sprintf("%s:%d", opts.host, opts.port)
+	logger.Printf("Listening on %s\n", url)
+	if !opts.tls {
 		logger.Fatal(http.ListenAndServe(url, mux))
 	} else {
-		url = fmt.Sprintf("https://%s:%d", *host, *port)
-		logger.Printf("Listening on %s\n", url)
-		logger.Fatal(http.ListenAndServeTLS(url, *cert, *key, mux))
+		logger.Fatal(http.ListenAndServeTLS(url, opts.cert, opts.key, mux))
 	}
 }
